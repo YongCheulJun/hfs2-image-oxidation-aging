@@ -1,0 +1,5 @@
+# Reproduction scripts (tools/) only. No GUI, no network.
+numpy>=1.24
+scipy>=1.10
+opencv-python>=4.8
+Pillow>=10.0

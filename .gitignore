@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# Internal build tooling (rebuild/verify scripts with local absolute paths) —
+# the deposited DB is the artefact; reproduce_canonical.py verifies it.
+build/
+
+# Regenerated outputs — reproducible from tools/. The fold-wise CSV is the one
+# deposit the response letter promises, so it is white-listed.
+outputs/*
+!outputs/canon_foldwise.csv
+
+# SQLite side files
+*.db-wal
+*.db-shm
+
+# OS
+.DS_Store
+Thumbs.db

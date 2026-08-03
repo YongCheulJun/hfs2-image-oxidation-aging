@@ -1,0 +1,34 @@
+query_png,condition,true_day,pool_size,excluded_jpg,pred_bstar_clip,err_bstar_clip,pred_ensemble,err_ensemble,pred_knn,err_knn,in_main_metric
+0day_35RH_NativeHFS2.png,NativeHfS2-35%RH,0,19,0day_35RH_NativeHFS2.jpg,5.80,5.80,6.85,6.85,6.94,6.94,yes
+0day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,0,19,0day_70RH_Al2O3HFS2.jpg,,,,,7.78,7.78,no
+0day_70RH_NativeHFS2.png,NativeHfS2-70%RH,0,19,0day_70RH_NativeHFS2.jpg,0.00,0.00,6.87,6.87,6.43,6.43,yes
+0day_70RH_PMMA_HFS2.png,PMMA HfS2-70%RH,0,19,0day_70RH_PMMA_HFS2.jpg,9.83,9.83,7.51,7.51,7.56,7.56,yes
+13day_70RH_NativeHFS2.png,NativeHfS2-70%RH,13,20,,17.10,4.10,19.56,6.56,19.33,6.33,yes
+14day_35RH_NativeHFS2.png,NativeHfS2-35%RH,14,19,14day_35RH_NativeHFS2.jpg,10.88,-3.12,8.32,-5.68,8.92,-5.08,yes
+14day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,14,19,14day_70RH_Al2O3HFS2.jpg,,,,,9.46,-4.54,no
+14day_70RH_NativeHFS2.png,NativeHfS2-70%RH,14,19,14day_70RH_NativeHFS2.jpg,17.76,3.76,27.08,13.08,26.98,12.98,yes
+14day_70RH_PMMA_HFS2.png,PMMA HfS2-70%RH,14,19,14day_70RH_PMMA_HFS2.jpg,15.07,1.07,9.72,-4.28,9.72,-4.28,yes
+15day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,15,20,,,,,,13.47,-1.53,no
+15day_70RH_NativeHFS2.png,NativeHfS2-70%RH,15,20,,17.23,2.23,18.43,3.43,17.18,2.18,yes
+16day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,16,20,,,,,,13.43,-2.57,no
+1day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,1,20,,,,,,12.00,11.00,no
+1day_70RH_NativeHFS2.png,NativeHfS2-70%RH,1,20,,0.00,-1.00,3.31,2.31,2.04,1.04,yes
+20day_70RH_NativeHFS2.png,NativeHfS2-70%RH,20,20,,18.36,-1.64,20.89,0.89,20.45,0.45,yes
+21day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,21,20,,,,,,13.71,-7.29,no
+21day_70RH_NativeHFS2.png,NativeHfS2-70%RH,21,20,,18.36,-2.64,20.81,-0.19,20.46,-0.54,yes
+22day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,22,20,,,,,,13.28,-8.72,no
+28day_35RH_NativeHFS2.png,NativeHfS2-35%RH,28,19,28day_35RH_NativeHFS2.jpg,13.03,-14.97,8.71,-19.29,9.15,-18.85,yes
+28day_70RH_PMMA_HFS2.png,PMMA HfS2-70%RH,28,19,28day_70RH_PMMA_HFS2.jpg,15.39,-12.61,8.71,-19.29,8.70,-19.30,yes
+29day_70RH_NativeHFS2.png,NativeHfS2-70%RH,29,20,,17.30,-11.70,25.25,-3.75,25.62,-3.38,yes
+2day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,2,20,,,,,,23.45,21.45,no
+2day_70RH_NativeHFS2.png,NativeHfS2-70%RH,2,20,,0.72,-1.28,2.66,0.66,2.56,0.56,yes
+30day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,30,20,,,,,,20.67,-9.33,no
+3day_35RH_NativeHFS2.png,NativeHfS2-35%RH,3,19,3day_35RH_NativeHFS2.jpg,8.46,5.46,6.93,3.93,7.07,4.07,yes
+3day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,3,19,3day_70RH_Al2O3HFS2.jpg,,,,,9.74,6.74,no
+3day_70RH_PMMA_HFS2.png,PMMA HfS2-70%RH,3,19,3day_70RH_PMMA_HFS2.jpg,14.28,11.28,8.86,5.86,7.39,4.39,yes
+4day_70RH_NativeHFS2.png,NativeHfS2-70%RH,4,20,,7.23,3.23,8.33,4.33,7.56,3.56,yes
+5day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,5,20,,,,,,5.64,0.64,no
+6day_70RH_NativeHFS2.png,NativeHfS2-70%RH,6,20,,9.84,3.84,8.58,2.58,8.72,2.72,yes
+7day_35RH_NativeHFS2.png,NativeHfS2-35%RH,7,19,7day_35RH_NativeHFS2.jpg,10.51,3.51,11.40,4.40,11.36,4.36,yes
+7day_70RH_Al2O3HFS2.png,Al2O3HfS2-70%RH,7,19,7day_70RH_Al2O3HFS2.jpg,,,,,15.78,8.78,no
+7day_70RH_PMMA_HFS2.png,PMMA HfS2-70%RH,7,19,7day_70RH_PMMA_HFS2.jpg,14.85,7.85,13.24,6.24,11.95,4.95,yes

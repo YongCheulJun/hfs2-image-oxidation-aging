@@ -1,0 +1,7 @@
+# Exact versions that reproduce the canonical values (reproduce_canonical.py 62/62 PASS).
+# Verified with Python 3.12.3 on x86_64 Linux. requirements.txt gives floor pins (>=);
+# use this lockfile to reproduce the reported numbers bit-for-bit.
+numpy==2.4.4
+scipy==1.17.1
+opencv-python-headless==4.13.0.92
+Pillow==12.2.0
