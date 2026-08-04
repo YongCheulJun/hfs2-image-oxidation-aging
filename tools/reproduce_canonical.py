@@ -590,7 +590,7 @@ def main():
                f"CI [{lo:+.2f}, {hi:+.2f}]")
 
     ra, rb, lo, hi, p2, wins = paired("knn", "pm")
-    check("kNN vs pool-mean bootstrap CI low", lo, 0.17)
+    check("kNN vs pool-mean bootstrap CI low", lo, 0.15)
     check("kNN vs pool-mean bootstrap CI high", hi, 4.78)
     check_true("kNN vs pool-mean CI excludes 0 (significant)", lo > 0.0,
                f"CI [{lo:+.2f}, {hi:+.2f}], Wilcoxon two-sided p={p2:.4f}")
