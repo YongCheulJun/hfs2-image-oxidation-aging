@@ -11,8 +11,10 @@ python tools/reproduce_canonical.py     # recomputes & asserts the reported valu
 python tools/make_foldwise_csv.py       # writes outputs/canon_foldwise.csv
 ```
 
-Python ≥ 3.10 with numpy, scipy, opencv-python, Pillow. All DB access is
-read-only; nothing is written.
+Python ≥ 3.10 with numpy, scipy, opencv-python, Pillow. The SQLite database is
+opened read-only and is never modified. `reproduce_canonical.py` only recomputes
+and asserts, writing nothing; `make_foldwise_csv.py` regenerates the output file
+`outputs/canon_foldwise.csv` (identical to the committed copy).
 
 ## Contents
 
