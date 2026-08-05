@@ -7,7 +7,7 @@ Data and code for reproducing the aging-day and Raman-A₁g calibration results 
 
 ```bash
 pip install -r requirements.txt
-python tools/reproduce_canonical.py     # recomputes & asserts the reported values → 139/139 PASS
+python tools/reproduce_canonical.py     # recomputes & asserts the reported values → 145/145 PASS
 python tools/reproduce_applicability.py # reproduces the operating-window section (tau, tsat, gate) → 12/12 PASS
 python tools/make_foldwise_csv.py       # writes outputs/canon_foldwise.csv
 ```
@@ -27,7 +27,7 @@ and asserts, writing nothing; `make_foldwise_csv.py` regenerates the output file
 | `dataset/images/` | 33 analysis photographs (PNG) — aging-day queries. |
 | `dataset/images_raman_jpg/` | 20 Raman-linked photographs (JPG) — reference library. |
 | `dataset/raman_a1g_values.csv` | Ref. [13] published normalized A₁g per (condition, day) — the single source read by the A₁g regression (nothing hardcoded). |
-| `tools/reproduce_canonical.py` | Recomputes and asserts the reported values (139 checks: data structure, pixel-fidelity, descriptors, pooled + per-condition LODO RMSE, weights, significance, pooled A₁g + Table S5 OLS/LOPO incl. the ΔE-only headline, Table 2 per-condition agreement + decay fits, Table 1 decay %, ROI-rescaling sensitivity bound) against the DB. |
+| `tools/reproduce_canonical.py` | Recomputes and asserts the reported values (145 checks: data structure, pixel-fidelity, descriptors, pooled + per-condition LODO RMSE, weights, significance, pooled A₁g + Table S5 OLS/LOPO incl. the ΔE-only headline, Table 2 per-condition agreement + decay fits, Table 1 decay %, ROI-rescaling and automatic-ROI-substitution sensitivity) against the DB. |
 | `tools/reproduce_applicability.py` | Reproduces the "Applicability criterion and operating window" section from the deposited b\* data (12 checks: per-condition offset-exponential fit τ, saturation time t_sat, local day resolution, operating-window gate counts). |
 | `tools/lodo_lib.py` | Descriptor/estimator library. |
 | `tools/make_foldwise_csv.py` | Writes the fold-wise prediction table (the SI fold-wise table). |
@@ -49,6 +49,7 @@ oxidizing conditions (n = 21):
 | Raman A₁g calibration (n=20) | R² = 0.600; best single descriptor ΔE R² = 0.701 (Table S5) |
 | Table 2 per-condition A₁g | r 0.96 / 0.88 / 0.41 / 0.81; decay k 0.036 / 0.262 / 0.005 / 0.029 day⁻¹ |
 | ROI-rescaling sensitivity | b\* LODO RMSE changes ≤ 0.03 d over −40%..0% area rescale |
+| ROI-substitution sensitivity | automatic detection (all 53 ROIs): b\* < 0.03 d, kNN +0.28 d, ensemble −0.13 d; spatial −0.97 d, FFT −2.45 d |
 | Operating window (b\* offset-exp fit) | τ = 12.6 / 3.36 / 5.06 d; gate flags 9 (2σ=1.4) or 12 (2σ=4.1) of 21 |
 
 See [`REPRODUCE.md`](REPRODUCE.md) for the number-to-command mapping.

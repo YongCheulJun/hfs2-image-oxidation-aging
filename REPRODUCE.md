@@ -2,7 +2,7 @@
 
 ```bash
 python3 -m pip install -r requirements.txt     # numpy, scipy, opencv-python, Pillow
-python3 tools/reproduce_canonical.py           # 139/139 PASS
+python3 tools/reproduce_canonical.py           # 145/145 PASS
 python3 tools/make_foldwise_csv.py             # outputs/canon_foldwise.csv
 ```
 
@@ -35,7 +35,8 @@ the query's exact (condition, day) is removed before estimation. The 33 PNG and
 | Table S5 (univariate OLS α/β ± SE, full-data R², R²-prop weights 0.206/0.204/0.212/0.379, per-descriptor LOPO incl. ΔE-only R² 0.701 / RMSE 0.172 / r 0.838 / MAE 0.136) | `reproduce_canonical.py` §8b |
 | Table 2 per-condition A₁g agreement (r/RMSE/MAE) + decay fits (k, t₀.₅₀, t₀.₁₀ or "not reached") | `reproduce_canonical.py` §8c |
 | ROI-rescaling sensitivity (b\* LODO RMSE change ≤ 0.03 d over −40%..0%, no boundary clipping) | `reproduce_canonical.py` §10 |
+| ROI-substitution sensitivity (automatic detection of all 53 ROIs: b\* < 0.03 d, kNN +0.28 d, ensemble −0.13 d, spatial −0.97 d, FFT −2.45 d) | `reproduce_canonical.py` §10b (ported pipeline detector `auto_roi`) |
 | SI Table S1 correlation coefficients + CIs | `reproduce_canonical.py` §2b |
 | SI fold-wise prediction table | `make_foldwise_csv.py` → `outputs/canon_foldwise.csv` |
 | operating window: τ (12.6 / 3.36 / 5.06 d), t_sat (23 / 10 / 8 d), native-70%RH local day resolution, gate flags (9 at 2σ=1.4, 12 at 2σ=4.1, of 21) | `reproduce_applicability.py` §1–4 (b\* offset-exponential fit on the deposited data) |
-| the reported values above, asserted (139 + 12 checks) | `reproduce_canonical.py` and `reproduce_applicability.py` |
+| the reported values above, asserted (145 + 12 checks) | `reproduce_canonical.py` and `reproduce_applicability.py` |

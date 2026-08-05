@@ -42,6 +42,10 @@ WHAT THIS REPRODUCES (paper values, manual-ROI canonical pipeline):
  11. ROI rescale ....... SI sensitivity bound: shrinking every saved ROI by area
                           factors -40%..0% changes the pooled b* LODO RMSE by
                           <= 0.03 days, with no boundary clipping.
+ 12. ROI substitution .. replacing all 53 saved manual ROIs with the ported
+                          automatic detector (auto_roi) changes the pooled LODO
+                          RMSE by < 0.03 d (b*+clip), +0.28 d (kNN), -0.13 d
+                          (ensemble), -0.97 d (spatial), -2.45 d (FFT).
 
 DATA SOURCES (this repository only — nothing else is read):
   dbfiles/hfs2_oxidation_dataset.db
@@ -267,6 +271,98 @@ def spatial_feat(rgb, m, roi, rows=3, cols=3):
     cvar = float(np.mean(cvv)) if cvv else 0.0
     ani = rvar / (cvar + 1e-6) if cvar > 1e-6 else 1.0
     return icsd, grad, ani
+
+
+# ------------------------------------------------ automatic ROI detector (port)
+def auto_roi(rgb, cond):
+    """Automatic ROI detector — numerically verbatim port of the analysis
+    pipeline's auto_detect_roi (hfs2_v5_49.py, default parameters, bias_ratio=0;
+    the unused historical bias branch is not ported). Deterministic; validated to
+    return identical (roi, flag) to the pipeline function on all 53 records.
+    Used only by the ROI-substitution sensitivity section (10b)."""
+    PAPER_V, PAPER_S = 215, 25
+    AREA = {"NativeHfS2-35%RH": 0.13, "NativeHfS2-70%RH": 0.15,
+            "Al2O3HfS2-70%RH": 0.17, "PMMA HfS2-70%RH": 0.15}
+    MAX_SPEC, EDGE_M, MIN_AREA, PAPER_IN = 0.70, 0.05, 0.03, 0.02
+    h, w = rgb.shape[:2]
+    img_area = h * w
+    default_roi = (w // 4, h // 4, 3 * w // 4, 3 * h // 4)
+    tar = AREA.get(cond, 0.15)
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    S = hsv[:, :, 1]
+    V = hsv[:, :, 2]
+    v_hi = PAPER_V
+    v_p92 = int(np.percentile(V, 92))
+    if PAPER_V < v_p92 < PAPER_V + 20:
+        v_hi = v_p92
+    paper = (V > v_hi) & (S < PAPER_S)
+    non_paper = (~paper).astype(np.uint8) * 255
+    k_clean = max(7, min(h, w) // 80)
+    if k_clean % 2 == 0:
+        k_clean += 1
+    kern = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k_clean, k_clean))
+    non_paper = cv2.morphologyEx(non_paper, cv2.MORPH_CLOSE, kern)
+    non_paper = cv2.morphologyEx(non_paper, cv2.MORPH_OPEN, kern)
+    contours, _ = cv2.findContours(non_paper, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return default_roi, "failed"
+    c = max(contours, key=cv2.contourArea)
+    hull = cv2.convexHull(c)
+    if cv2.contourArea(hull) < 0.9 * img_area:
+        c = hull
+    sx, sy, sbw, sbh = cv2.boundingRect(c)
+    if sbw < 10 or sbh < 10:
+        return default_roi, "failed"
+    target_area = img_area * tar
+    raw_aspect = sbw / sbh if sbh > 0 else 1.0
+    aspect = raw_aspect ** 0.5
+    roi_w = int((target_area * aspect) ** 0.5)
+    roi_h = int((target_area / aspect) ** 0.5)
+    roi_w = min(roi_w, int(sbw * MAX_SPEC))
+    roi_h = min(roi_h, int(sbh * MAX_SPEC))
+    roi_w = max(roi_w, int(min(w, sbw) * 0.18))
+    roi_h = max(roi_h, int(min(h, sbh) * 0.18))
+    cx_base = sx + sbw / 2
+    cy_base = sy + sbh / 2
+    M = cv2.moments(c)
+    if M["m00"] > 0:
+        cx_mass = M["m10"] / M["m00"]
+        cy_mass = M["m01"] / M["m00"]
+    else:
+        cx_mass, cy_mass = cx_base, cy_base
+    if cv2.pointPolygonTest(c, (float(cx_mass), float(cy_mass)), False) < 0:
+        cx_mass, cy_mass = cx_base, cy_base
+    cx = (cx_base + cx_mass) / 2
+    cy = (cy_base + cy_mass) / 2
+    margin_x = int(w * EDGE_M)
+    margin_y = int(h * EDGE_M)
+    x0 = int(cx - roi_w / 2)
+    y0 = int(cy - roi_h / 2)
+    x1 = x0 + roi_w
+    y1 = y0 + roi_h
+    if x0 < margin_x:
+        s_ = margin_x - x0; x0 += s_; x1 += s_
+    if x1 > w - margin_x:
+        s_ = x1 - (w - margin_x); x0 -= s_; x1 -= s_
+    if y0 < margin_y:
+        s_ = margin_y - y0; y0 += s_; y1 += s_
+    if y1 > h - margin_y:
+        s_ = y1 - (h - margin_y); y0 -= s_; y1 -= s_
+    x0 = max(0, x0); y0 = max(0, y0)
+    x1 = min(w, x1); y1 = min(h, y1)
+    if x1 <= x0 + 1 or y1 <= y0 + 1:
+        return default_roi, "failed"
+    roi = (int(x0), int(y0), int(x1), int(y1))
+    area_ratio = (x1 - x0) * (y1 - y0) / img_area
+    if area_ratio < MIN_AREA:
+        return roi, "warn_small"
+    if (x0 < margin_x * 0.5 or y0 < margin_y * 0.5
+            or x1 > w - margin_x * 0.5 or y1 > h - margin_y * 0.5):
+        return roi, "warn_off"
+    rp = paper[y0:y1, x0:x1]
+    if (float(rp.mean()) if rp.size > 0 else 0.0) > PAPER_IN:
+        return roi, "warn_paper"
+    return roi, "good"
 
 
 # ------------------------------------------------------------------- estimators
@@ -800,6 +896,59 @@ def main():
     check_true("no boundary clipping for any rescaled ROI (SI statement)", not clipped)
     check_true("b* LODO RMSE change over -40%..0% rescale <= 0.03 d (SI bound)",
                max_change <= 0.03, f"max |change| = {max_change:.4f} d")
+
+    # ---- 10b. ROI-substitution sensitivity (fully automatic detection) ------
+    # All 53 saved manual ROIs are replaced by the automatic detector (auto_roi,
+    # a verbatim port of the pipeline's auto_detect_roi with default parameters),
+    # every descriptor is recomputed from the pixels on the detected ROIs, and
+    # the full LODO (including the per-fold Huber ensemble refit) is re-run.
+    # Asserted deltas are versus the manual-ROI pooled RMSEs of section 5.
+    print("\n## 10b. ROI-substitution sensitivity — automatic detection, all 53 records")
+    base_pool = {k: rmse(errs(ox_q, k)) for k in ("bs_clip", "knn", "ens", "wass", "spatial", "fft")}
+    autod = []
+    flags_ok = True
+    for d in imgs:
+        r_, flag = auto_roi(d["rgb"], d["cond"])
+        flags_ok = flags_ok and (flag == "good")
+        m = roi_mask(d["rgb"].shape, r_)
+        _, _, b_ = recompute_lab(d["rgb"], m)
+        autod.append(dict(name=d["name"], cond=d["cond"], day=d["day"], b=b_,
+                          s=recompute_s_mean(d["rgb"], m), yi=recompute_yi(d["rgb"], m),
+                          hist=hist_sig(d["rgb"], m), fft=fft_feat(d["rgb"], m),
+                          sp=spatial_feat(d["rgb"], m, r_)))
+    check_true("automatic detection flags all 53 records 'good'", flags_ok)
+    a_png = [d for d in autod if d["name"].lower().endswith(".png")]
+    a_jpg = [d for d in autod if d["name"].lower().endswith(".jpg")]
+    a_jpg_ox = [d for d in a_jpg if d["cond"] in OX]
+    Ra = []
+    for q in a_png:
+        pool = [p for p in a_jpg if not (p["cond"] == q["cond"] and p["day"] == q["day"])]
+        est = {"knn": est_knn(q, pool), "wass": est_wass(q, pool),
+               "fft": est_fft(q, pool), "spatial": est_spatial(q, pool)}
+        tr_ox = [p for p in a_jpg_ox if not (p["cond"] == q["cond"] and p["day"] == q["day"])]
+        bs_c = np.nan
+        if q["cond"] in OX:
+            Xb = np.array([p["b"] for p in tr_ox]); yv = np.array([p["day"] for p in tr_ox])
+            Ab = np.vstack([Xb, np.ones(len(Xb))]).T
+            coef, *_ = np.linalg.lstsq(Ab, yv, rcond=None)
+            bs_c = float(np.clip(coef[0] * q["b"] + coef[1], CLIP_LO, CLIP_HI))
+        Ra.append(dict(cond=q["cond"], day=q["day"], est=est, bs_clip=bs_c))
+    a_ox = [r for r in Ra if r["cond"] in OX]
+    a_plain = [(r["day"], r["est"]) for r in a_ox]
+    for i, r in enumerate(a_ox):
+        wf = opt_w([a_plain[k] for k in range(len(a_plain)) if k != i])
+        r["ens"] = float(np.dot(wf, [r["est"][m4] for m4 in M4]))
+    d_bs = rmse(errs(a_ox, "bs_clip")) - base_pool["bs_clip"]
+    d_knn = rmse(errs(a_ox, "knn")) - base_pool["knn"]
+    d_ens = rmse(errs(a_ox, "ens")) - base_pool["ens"]
+    d_sp = rmse(errs(a_ox, "spatial")) - base_pool["spatial"]
+    d_fft = rmse(errs(a_ox, "fft")) - base_pool["fft"]
+    check_true("auto-ROI substitution: b*+clip pooled RMSE change < 0.03 d",
+               abs(d_bs) < 0.03, f"delta = {d_bs:+.4f} d")
+    check("auto-ROI substitution: kNN pooled RMSE change (d)", d_knn, 0.28, tol=0.01)
+    check("auto-ROI substitution: ensemble pooled RMSE change (d)", d_ens, -0.13, tol=0.01)
+    check("auto-ROI substitution: spatial pooled RMSE change (d)", d_sp, -0.97, tol=0.01)
+    check("auto-ROI substitution: FFT pooled RMSE change (d)", d_fft, -2.45, tol=0.01)
 
     # ---- summary ------------------------------------------------------------
     n_pass = sum(1 for _, ok in CHECKS if ok)
