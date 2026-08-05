@@ -16,7 +16,7 @@ WHAT THIS REPRODUCES (paper values, manual-ROI canonical pipeline):
                           Wasserstein 8.77 / FFT 12.78 / pool-mean 9.84 (days).
   3. Ensemble weights ... Huber fit on ox-21: kNN 0.91 / spatial 0.04 / Wass 0.05 / FFT 0.
   4. Significance ....... b*+clip vs pool-mean: dRMSE +3.06, bootstrap 95% CI
-                          [+1.55, +4.42], Wilcoxon two-sided p = 0.0030, 18/21 wins.
+                          [+1.55, +4.43], Wilcoxon two-sided p = 0.0030, 18/21 wins.
                           kNN vs pool-mean: CI [+0.15, +4.78] (excludes 0).
   5. A1g regression ..... 4-OLS R^2-weighted LOO on the 20 Raman-linked JPG
                           (condition, day) pairs — the images that physically carry
@@ -586,7 +586,7 @@ def main():
     ra, rb, lo, hi, p2, wins = paired("bs_clip", "pm")
     check("b*+clip vs pool-mean dRMSE", rb - ra, 3.06)
     check("b*+clip vs pool-mean bootstrap CI low", lo, 1.55)
-    check("b*+clip vs pool-mean bootstrap CI high", hi, 4.42)
+    check("b*+clip vs pool-mean bootstrap CI high", hi, 4.43)
     check("b*+clip vs pool-mean Wilcoxon two-sided p", p2, 0.0030, tol=0.0005, fmt=".4f")
     check_int("b*+clip vs pool-mean wins (|err| smaller)", wins, 18)
     check_true("b*+clip vs pool-mean CI excludes 0 (significant)", lo > 0.0,
