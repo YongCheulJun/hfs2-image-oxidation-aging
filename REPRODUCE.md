@@ -33,4 +33,5 @@ the query's exact (condition, day) is removed before estimation. The 33 PNG and
 | Table 1 A₁g decay % (60.1 / 94.0 / 13.5 / 47.3) | `reproduce_canonical.py` §9 |
 | SI Table S1 correlation coefficients + CIs | `reproduce_canonical.py` §2b |
 | SI fold-wise prediction table | `make_foldwise_csv.py` → `outputs/canon_foldwise.csv` |
-| the reported values above, asserted (62 checks) | `reproduce_canonical.py` |
+| operating window: τ (12.6 / 3.36 / 5.06 d), t_sat (23 / 10 / 8 d), native-70%RH local day resolution, gate flags (9 at 2σ=1.4, 12 at 2σ=4.1, of 21) | `reproduce_applicability.py` §1–4 (b\* offset-exponential fit on the deposited data) |
+| the reported values above, asserted (62 + 12 checks) | `reproduce_canonical.py` and `reproduce_applicability.py` |

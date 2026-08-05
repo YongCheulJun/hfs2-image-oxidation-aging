@@ -8,6 +8,7 @@ Data and code for reproducing the aging-day and Raman-A₁g calibration results 
 ```bash
 pip install -r requirements.txt
 python tools/reproduce_canonical.py     # recomputes & asserts the reported values → 62/62 PASS
+python tools/reproduce_applicability.py # reproduces the operating-window section (tau, tsat, gate) → 12/12 PASS
 python tools/make_foldwise_csv.py       # writes outputs/canon_foldwise.csv
 ```
 
@@ -27,6 +28,7 @@ and asserts, writing nothing; `make_foldwise_csv.py` regenerates the output file
 | `dataset/images_raman_jpg/` | 20 Raman-linked photographs (JPG) — reference library. |
 | `dataset/raman_a1g_values.csv` | Ref. [13] published normalized A₁g per (condition, day) — the single source read by the A₁g regression (nothing hardcoded). |
 | `tools/reproduce_canonical.py` | Recomputes and asserts the reported values (62 checks: data structure, pixel-fidelity, descriptors, LODO RMSE, weights, significance, A₁g, decay) against the DB. |
+| `tools/reproduce_applicability.py` | Reproduces the "Applicability criterion and operating window" section from the deposited b\* data (12 checks: per-condition offset-exponential fit τ, saturation time t_sat, local day resolution, operating-window gate counts). |
 | `tools/lodo_lib.py` | Descriptor/estimator library. |
 | `tools/make_foldwise_csv.py` | Writes the fold-wise prediction table (the SI fold-wise table). |
 |
@@ -44,6 +46,7 @@ oxidizing conditions (n = 21):
 | 4-method Huber ensemble | 7.94 d |
 | pool-mean (baseline) | 9.84 d |
 | Raman A₁g calibration (n=20) | R² = 0.600 |
+| Operating window (b\* offset-exp fit) | τ = 12.6 / 3.36 / 5.06 d; gate flags 9 (2σ=1.4) or 12 (2σ=4.1) of 21 |
 
 See [`REPRODUCE.md`](REPRODUCE.md) for the number-to-command mapping.
 
