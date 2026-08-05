@@ -28,6 +28,20 @@ WHAT THIS REPRODUCES (paper values, manual-ROI canonical pipeline):
                           same-pool (reference = day-0 of the same condition), hence
                           exactly 0 at day 0 and reproducible from Lab alone.
   7. Table 1 decay ...... (1 - A1g(28d)) x 100 = 60.1 / 94.0 / 13.5 / 47.3 %.
+  8. Per-condition ...... LODO RMSE per condition (main text / Fig. 4b / Table S3):
+                          b*+clip 7.87 / 4.37 / 9.44, kNN 9.64 / 5.12 / 9.92,
+                          pool-mean 10.50 / 9.20 / 10.50 (days; N35 / N70 / PMMA),
+                          Al2O3 control kNN 9.17 vs pool-mean 9.48.
+  9. Table S5 ........... univariate OLS coefficients (alpha/beta +- SE), full-data
+                          R^2, R^2-proportional weights (0.206/0.204/0.212/0.379),
+                          and LOPO per descriptor — including the Delta-E-only
+                          headline (R^2 = 0.701, RMSE = 0.172, r = 0.838, MAE = 0.136).
+ 10. Table 2 ........... per-condition A1g agreement (r / RMSE / MAE of the
+                          R^2-weighted LOPO estimate) and first-order decay fits
+                          I(t) = I0*exp(-k*t): k, t0.50, t0.10 (or "not reached").
+ 11. ROI rescale ....... SI sensitivity bound: shrinking every saved ROI by area
+                          factors -40%..0% changes the pooled b* LODO RMSE by
+                          <= 0.03 days, with no boundary clipping.
 
 DATA SOURCES (this repository only — nothing else is read):
   dbfiles/hfs2_oxidation_dataset.db
@@ -74,7 +88,7 @@ from pathlib import Path
 import numpy as np
 import cv2
 from PIL import Image
-from scipy.optimize import minimize
+from scipy.optimize import curve_fit, minimize
 from scipy.stats import wilcoxon
 
 # ---------------------------------------------------------------- configuration
@@ -364,9 +378,9 @@ def ols(x, y):
     return alpha, beta, max(0.0, r2)
 
 
-def a1g_loo(pts):
-    """pts = [(b, S, YI, dE, a1g)] -> (R2, RMSE, r, MAE)"""
-    refs, preds = [], []
+def a1g_loo_preds(pts):
+    """pts = [(b, S, YI, dE, a1g)] -> per-pair R^2-weighted 4-OLS LOO predictions."""
+    preds = []
     for i in range(len(pts)):
         tr = pts[:i] + pts[i + 1:]
         y = [p[4] for p in tr]
@@ -376,12 +390,49 @@ def a1g_loo(pts):
             num += r2 * (a + b * pts[i][k])
             den += r2
         preds.append(num / den if den > 0 else float(np.mean(y)))
-        refs.append(pts[i][4])
-    refs = np.array(refs); preds = np.array(preds)
+    return np.array(preds)
+
+
+def a1g_loo(pts):
+    """pts = [(b, S, YI, dE, a1g)] -> (R2, RMSE, r, MAE)"""
+    preds = a1g_loo_preds(pts)
+    refs = np.array([p[4] for p in pts])
     err = preds - refs
     ss_res = float((err ** 2).sum()); ss_tot = float(((refs - refs.mean()) ** 2).sum())
     return (1 - ss_res / ss_tot, float(np.sqrt((err ** 2).mean())),
             float(np.corrcoef(refs, preds)[0, 1]), float(np.abs(err).mean()))
+
+
+def ols_se(x, y):
+    """Full-data univariate OLS with coefficient standard errors (Table S5).
+
+    Returns (alpha, se_alpha, beta, se_beta, r2)."""
+    x = np.asarray(x, float); y = np.asarray(y, float)
+    n = len(x)
+    xm, ym = x.mean(), y.mean()
+    Sxx = float(((x - xm) ** 2).sum())
+    beta = float(((x - xm) * (y - ym)).sum() / Sxx)
+    alpha = float(ym - beta * xm)
+    resid = y - (alpha + beta * x)
+    sse = float((resid ** 2).sum())
+    r2 = 1.0 - sse / float(((y - ym) ** 2).sum())
+    s2 = sse / (n - 2)
+    return (alpha, float(np.sqrt(s2 * (1.0 / n + xm * xm / Sxx))),
+            beta, float(np.sqrt(s2 / Sxx)), r2)
+
+
+def desc_lopo(pts, k):
+    """Single-descriptor leave-one-pair-out (Table S5) -> (R2, RMSE, r, MAE)."""
+    preds = []
+    for i in range(len(pts)):
+        tr = pts[:i] + pts[i + 1:]
+        a, b, _ = ols([p[k] for p in tr], [p[4] for p in tr])
+        preds.append(a + b * pts[i][k])
+    y = np.array([p[4] for p in pts]); p = np.array(preds)
+    e = p - y
+    r2 = 1.0 - float((e ** 2).sum()) / float(((y - y.mean()) ** 2).sum())
+    return (r2, float(np.sqrt((e ** 2).mean())),
+            float(np.corrcoef(p, y)[0, 1]), float(np.abs(e).mean()))
 
 
 # ------------------------------------------------------------------------- main
@@ -565,6 +616,22 @@ def main():
                              ("pm", "pool-mean (LODO baseline)", 9.84)]:
         check(f"RMSE {label}", rmse(errs(ox_q, key)), want)
 
+    # ---- 5b. per-condition LODO RMSE (main text / Fig. 4b / Table S3) -------
+    print("\n## 5b. Per-condition LODO RMSE (days) — main text, Fig. 4(b), Table S3")
+
+    def cond_rows(c):
+        return [r for r in ox_q if r["cond"] == c]
+
+    for c, want in zip(OX, [7.87, 4.37, 9.44]):
+        check(f"per-condition RMSE b*+clip {c}", rmse(errs(cond_rows(c), "bs_clip")), want, tol=0.01)
+    for c, want in zip(OX, [9.64, 5.12, 9.92]):
+        check(f"per-condition RMSE kNN {c}", rmse(errs(cond_rows(c), "knn")), want, tol=0.01)
+    for c, want in zip(OX, [10.50, 9.20, 10.50]):
+        check(f"per-condition RMSE pool-mean {c}", rmse(errs(cond_rows(c), "pm")), want, tol=0.01)
+    al_rows = [r for r in R if r["cond"] == "Al2O3HfS2-70%RH"]
+    check("Al2O3 (outside range) RMSE kNN", rmse(errs(al_rows, "knn")), 9.17, tol=0.01)
+    check("Al2O3 (outside range) RMSE pool-mean", rmse(errs(al_rows, "pm")), 9.48, tol=0.01)
+
     print("\n## 6. Ensemble weights (Huber fit, ox-21)")
     for m, want in zip(M4, [0.91, 0.05, 0.00, 0.04]):
         check(f"ensemble weight {m}", float(w_all[M4.index(m)]), want)
@@ -612,10 +679,127 @@ def main():
     check("A1g LOO r", r_, 0.794, fmt=".3f")
     check("A1g LOO MAE", mae, 0.159, fmt=".3f")
 
+    # ---- 8b. Table S5: OLS coefficients, R^2-prop weights, per-descriptor LOPO
+    print("\n## 8b. Table S5 — univariate OLS coefficients, weights, LOPO per descriptor")
+    S5 = {  # name: (alpha, se_alpha, beta, se_beta, fullR2, lopoR2, lopoRMSE, lopoR, lopoMAE)
+        "b*": (0.3663, 0.1044, 0.02327, 0.00667, 0.403, 0.288, 0.266, 0.545, 0.206),
+        "S": (0.3990, 0.0973, 0.01147, 0.00332, 0.399, 0.286, 0.266, 0.543, 0.210),
+        "YI": (-0.0286, 0.2035, 0.01861, 0.00520, 0.416, 0.306, 0.262, 0.560, 0.204),
+        "dE": (0.9355, 0.0525, -0.04641, 0.00643, 0.743, 0.701, 0.172, 0.838, 0.136),
+    }
+    DESC = ["b*", "S", "YI", "dE"]
+    y20 = [p[4] for p in pts]
+    full_r2 = []
+    for k, nm in enumerate(DESC):
+        a, se_a, b, se_b, r2f = ols_se([p[k] for p in pts], y20)
+        wa, wsa, wb, wsb, wr2 = S5[nm][:5]
+        check(f"Table S5 {nm} alpha", a, wa, tol=2e-4, fmt=".4f")
+        check(f"Table S5 {nm} SE(alpha)", se_a, wsa, tol=2e-4, fmt=".4f")
+        check(f"Table S5 {nm} beta", b, wb, tol=2e-5, fmt=".5f")
+        check(f"Table S5 {nm} SE(beta)", se_b, wsb, tol=2e-5, fmt=".5f")
+        check(f"Table S5 {nm} full-data R^2", r2f, wr2, tol=8e-4, fmt=".3f")
+        full_r2.append(r2f)
+    wprop = np.array(full_r2) / sum(full_r2)
+    for wi, want, nm in zip(wprop, [0.206, 0.204, 0.212, 0.379], DESC):
+        check(f"full-data R^2-proportional weight {nm}", float(wi), want, tol=8e-4, fmt=".3f")
+    for k, nm in enumerate(DESC):
+        lr2, lrm, lr, lmae = desc_lopo(pts, k)
+        wr2, wrm, wr, wmae = S5[nm][5:]
+        check(f"LOPO {nm} R^2", lr2, wr2, tol=8e-4, fmt=".3f")
+        check(f"LOPO {nm} RMSE", lrm, wrm, tol=8e-4, fmt=".3f")
+        check(f"LOPO {nm} r", lr, wr, tol=8e-4, fmt=".3f")
+        check(f"LOPO {nm} MAE", lmae, wmae, tol=8e-4, fmt=".3f")
+
+    # ---- 8c. Table 2: per-condition A1g agreement + first-order decay fits --
+    print("\n## 8c. Table 2 — per-condition A1g agreement (R^2-weighted LOPO) + decay fits")
+    preds_w = a1g_loo_preds(pts)
+    y_all = np.array(y20)
+    conds_of = [d["cond"] for d in exact]
+    T2 = {"NativeHfS2-35%RH": (0.96, 0.15, 0.13), "NativeHfS2-70%RH": (0.88, 0.30, 0.27),
+          "Al2O3HfS2-70%RH": (0.41, 0.11, 0.08), "PMMA HfS2-70%RH": (0.81, 0.19, 0.14)}
+    for c in CONDS:
+        ii = [i for i, cc in enumerate(conds_of) if cc == c]
+        e = preds_w[ii] - y_all[ii]
+        check(f"Table 2 {c} r", float(np.corrcoef(preds_w[ii], y_all[ii])[0, 1]), T2[c][0], tol=0.0055)
+        check(f"Table 2 {c} RMSE", float(np.sqrt((e ** 2).mean())), T2[c][1], tol=0.0055)
+        check(f"Table 2 {c} MAE", float(np.abs(e).mean()), T2[c][2], tol=0.0055)
+    # decay: I(t) = I0*exp(-k t), nonlinear least squares on the five Ref.[13] values
+    # per condition; t0.50/t0.10 = fitted crossings, "not reached" = beyond 28 days.
+    DECAY = {"NativeHfS2-35%RH": (0.036, 18.0, None), "NativeHfS2-70%RH": (0.262, 2.7, 8.8),
+             "Al2O3HfS2-70%RH": (0.005, None, None), "PMMA HfS2-70%RH": (0.029, 20.8, None)}
+    for c in CONDS:
+        t = np.array(RAMAN_DAYS, float)
+        yy = np.array(MEASURED_A1G[c], float)
+        (I0, kdec), _ = curve_fit(lambda tt, I0, kk: I0 * np.exp(-kk * tt), t, yy,
+                                  p0=[1.0, 0.05], maxfev=20000)
+        t50 = float(np.log(I0 / 0.50) / kdec)
+        t10 = float(np.log(I0 / 0.10) / kdec)
+        wk, wt50, wt10 = DECAY[c]
+        check(f"Table 2 {c} decay k", float(kdec), wk, tol=7e-4, fmt=".3f")
+        if wt50 is None:
+            check_true(f"Table 2 {c} t0.50 not reached (> 28 d)", t50 > 28.0, f"fitted t0.50 = {t50:.1f} d")
+        else:
+            check(f"Table 2 {c} t0.50", t50, wt50, tol=0.055, fmt=".1f")
+        if wt10 is None:
+            check_true(f"Table 2 {c} t0.10 not reached (> 28 d)", t10 > 28.0, f"fitted t0.10 = {t10:.1f} d")
+        else:
+            check(f"Table 2 {c} t0.10", t10, wt10, tol=0.055, fmt=".1f")
+
     # ---- 9. Table 1 decay from Ref.[13] values ------------------------------
     print("\n## 9. Table 1 A1g decay percentages (Ref.[13] values)")
     for c, want in zip(CONDS, [60.1, 94.0, 13.5, 47.3]):
         check(f"decay % {c}", (1 - MEASURED_A1G[c][-1]) * 100, want, fmt=".1f")
+
+    # ---- 10. ROI-rescaling sensitivity (SI bound: <= 0.03 days, -40%..0%) ---
+    # Every saved ROI (all 53 records) is shrunk about its stored centre by an
+    # area factor, b* is recomputed from the pixels on the shrunk ROI, and the
+    # pooled query-excluded b*+clip LODO RMSE is re-evaluated. SI statement:
+    # over the valid range -40%..0% the RMSE changes by at most 0.03 days and
+    # no ROI is clipped at an image boundary. (Enlargement factors are outside
+    # the valid range — they admit specimen-edge/background pixels — and are
+    # not part of the deposited claim.)
+    print("\n## 10. ROI-rescaling sensitivity — area factors -40%..0%, all 53 saved ROIs")
+
+    def shrink_roi(roi, f):
+        x0, y0, x1, y1 = roi
+        cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        w_, h_ = (x1 - x0) * f ** 0.5, (y1 - y0) * f ** 0.5
+        return (int(round(cx - w_ / 2)), int(round(cy - h_ / 2)),
+                int(round(cx + w_ / 2)), int(round(cy + h_ / 2)))
+
+    def bstar_lodo_rmse(bmap):
+        errs_ = []
+        for q in png:
+            if q["cond"] not in OX:
+                continue
+            tr = [p for p in jpg_ox if not (p["cond"] == q["cond"] and p["day"] == q["day"])]
+            Xb = np.array([bmap[p["name"]] for p in tr])
+            yv = np.array([p["day"] for p in tr])
+            Ab = np.vstack([Xb, np.ones(len(Xb))]).T
+            coef, *_ = np.linalg.lstsq(Ab, yv, rcond=None)
+            pred = float(np.clip(coef[0] * bmap[q["name"]] + coef[1], CLIP_LO, CLIP_HI))
+            errs_.append(pred - q["day"])
+        e = np.asarray(errs_, float)
+        return float(np.sqrt(np.mean(e * e)))
+
+    base_rmse = bstar_lodo_rmse({d["name"]: d["b"] for d in imgs})
+    clipped = False
+    max_change = 0.0
+    for f in (0.9, 0.8, 0.7, 0.6):
+        bmap = {}
+        for d in imgs:
+            r_ = shrink_roi(d["roi"], f)
+            h_, w_ = d["rgb"].shape[:2]
+            if r_[0] < 0 or r_[1] < 0 or r_[2] > w_ or r_[3] > h_:
+                clipped = True
+            m = roi_mask(d["rgb"].shape, r_)
+            bmap[d["name"]] = recompute_lab(d["rgb"], m)[2]
+        delta = abs(bstar_lodo_rmse(bmap) - base_rmse)
+        print(f"    area factor {f:.1f}: pooled b* LODO RMSE change = {delta:.4f} d")
+        max_change = max(max_change, delta)
+    check_true("no boundary clipping for any rescaled ROI (SI statement)", not clipped)
+    check_true("b* LODO RMSE change over -40%..0% rescale <= 0.03 d (SI bound)",
+               max_change <= 0.03, f"max |change| = {max_change:.4f} d")
 
     # ---- summary ------------------------------------------------------------
     n_pass = sum(1 for _, ok in CHECKS if ok)

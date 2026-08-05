@@ -2,7 +2,7 @@
 
 ```bash
 python3 -m pip install -r requirements.txt     # numpy, scipy, opencv-python, Pillow
-python3 tools/reproduce_canonical.py           # 62/62 PASS
+python3 tools/reproduce_canonical.py           # 139/139 PASS
 python3 tools/make_foldwise_csv.py             # outputs/canon_foldwise.csv
 ```
 
@@ -31,7 +31,11 @@ the query's exact (condition, day) is removed before estimation. The 33 PNG and
 | significance (bootstrap CI, Wilcoxon, wins) | `reproduce_canonical.py` §7 |
 | Raman A₁g R² 0.600 / RMSE 0.199 / r 0.794 / MAE 0.159 | `reproduce_canonical.py` §8 (A₁g from `dataset/raman_a1g_values.csv`) |
 | Table 1 A₁g decay % (60.1 / 94.0 / 13.5 / 47.3) | `reproduce_canonical.py` §9 |
+| per-condition LODO RMSE (b\* 7.87/4.37/9.44, kNN 9.64/5.12/9.92, pool-mean 10.50/9.20/10.50; Al₂O₃ kNN 9.17 vs pool-mean 9.48) | `reproduce_canonical.py` §5b |
+| Table S5 (univariate OLS α/β ± SE, full-data R², R²-prop weights 0.206/0.204/0.212/0.379, per-descriptor LOPO incl. ΔE-only R² 0.701 / RMSE 0.172 / r 0.838 / MAE 0.136) | `reproduce_canonical.py` §8b |
+| Table 2 per-condition A₁g agreement (r/RMSE/MAE) + decay fits (k, t₀.₅₀, t₀.₁₀ or "not reached") | `reproduce_canonical.py` §8c |
+| ROI-rescaling sensitivity (b\* LODO RMSE change ≤ 0.03 d over −40%..0%, no boundary clipping) | `reproduce_canonical.py` §10 |
 | SI Table S1 correlation coefficients + CIs | `reproduce_canonical.py` §2b |
 | SI fold-wise prediction table | `make_foldwise_csv.py` → `outputs/canon_foldwise.csv` |
 | operating window: τ (12.6 / 3.36 / 5.06 d), t_sat (23 / 10 / 8 d), native-70%RH local day resolution, gate flags (9 at 2σ=1.4, 12 at 2σ=4.1, of 21) | `reproduce_applicability.py` §1–4 (b\* offset-exponential fit on the deposited data) |
-| the reported values above, asserted (62 + 12 checks) | `reproduce_canonical.py` and `reproduce_applicability.py` |
+| the reported values above, asserted (139 + 12 checks) | `reproduce_canonical.py` and `reproduce_applicability.py` |
