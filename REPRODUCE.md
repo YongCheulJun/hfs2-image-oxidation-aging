@@ -6,8 +6,9 @@ python3 tools/reproduce_canonical.py           # 62/62 PASS
 python3 tools/make_foldwise_csv.py             # outputs/canon_foldwise.csv
 ```
 
-`reproduce_canonical.py` reads only `dbfiles/hfs2_oxidation_dataset.db`
-(read-only), imports no application code, and asserts each reported value
+`reproduce_canonical.py` reads `dbfiles/hfs2_oxidation_dataset.db` (read-only)
+and the deposited Ref. [13] A₁g values `dataset/raman_a1g_values.csv`, imports no
+application code, and asserts each reported value
 against what it recomputes. Deterministic — same input, same output.
 
 Verify data integrity: `md5sum -c dbfiles/CHECKSUMS.md5`
@@ -26,7 +27,7 @@ the query's exact (condition, day) is removed before estimation. The 33 PNG and
 | 7.70 d (kNN) | `reproduce_canonical.py` §5 |
 | 7.94 d (4-method ensemble) | `reproduce_canonical.py` §5 |
 | 9.84 d (pool-mean baseline) | `reproduce_canonical.py` §5 |
-| ensemble weights (kNN 0.91 / Wasserstein 0.07 / spatial 0.02 / FFT 0.00) | `reproduce_canonical.py` §6 |
+| ensemble weights (kNN 0.91 / Wasserstein 0.05 / spatial 0.04 / FFT 0.00) | `reproduce_canonical.py` §6 |
 | significance (bootstrap CI, Wilcoxon, wins) | `reproduce_canonical.py` §7 |
 | Raman A₁g R² 0.600 / RMSE 0.199 / r 0.794 / MAE 0.159 | `reproduce_canonical.py` §8 (A₁g from `dataset/raman_a1g_values.csv`) |
 | Table 1 A₁g decay % (60.1 / 94.0 / 13.5 / 47.3) | `reproduce_canonical.py` §9 |

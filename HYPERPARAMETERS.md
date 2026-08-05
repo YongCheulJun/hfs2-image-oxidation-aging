@@ -48,10 +48,11 @@ On this data only the lower clip bound (0) ever activates.
 | --- | --- | --- |
 | Grid | 3 × 3 | `spatial_feat` — `lodo_lib.py:70`, `reproduce_canonical.py:228` |
 | Min pixels per cell | 5 | `spatial_feat` |
-| Distance weights (entropy / boundary-grad / anisotropy) | 0.4 / 0.4 / 0.2 | `lodo_lib.py:142`, `reproduce_canonical.py:310` |
+| Descriptor | inter-cell b\* std, centre–boundary b\* gradient, anisotropy | `spatial_feat` |
+| Distance weights (inter-cell std / centre-boundary gradient / anisotropy) | 0.4 / 0.4 / 0.2 | `lodo_lib.py`, `reproduce_canonical.py` |
 
-With a 3×3 grid the centre block spans the whole ROI, so the boundary set is empty
-and the boundary-gradient term is identically 0 (reproduced as originally defined).
+The centre–boundary gradient uses the single central cell as the centre and the
+surrounding 8 cells as the boundary (mean b\* over the cells with enough pixels).
 
 ## Wasserstein estimator
 
@@ -70,7 +71,7 @@ and the boundary-gradient term is identically 0 (reproduced as originally define
 | Optimizer | L-BFGS-B | `opt_w` |
 | Multistart | uniform + 4 one-hot starts (0.80 / 0.05) | `lodo_lib.py:158`, `reproduce_canonical.py:336` |
 | Fit protocol | per-fold refit on the other 20 oxidizing queries | `reproduce_canonical.py` §6 |
-| Fitted weights | kNN 0.91 / Wasserstein 0.07 / FFT 0.00 / spatial 0.02 | asserted `reproduce_canonical.py` §6 |
+| Fitted weights | kNN 0.91 / Wasserstein 0.05 / FFT 0.00 / spatial 0.04 | asserted `reproduce_canonical.py` §6 |
 
 ## Significance test
 

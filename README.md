@@ -20,7 +20,7 @@ and asserts, writing nothing; `make_foldwise_csv.py` regenerates the output file
 
 | Path | Description |
 | --- | --- |
-| `dbfiles/hfs2_oxidation_dataset.db` | 53 images (33 PNG queries + 20 JPG reference library): RGB, ROI, descriptors (L\*, a\*, b\*, S, YI, ΔE). The reproduction reads only this file. |
+| `dbfiles/hfs2_oxidation_dataset.db` | 53 images (33 PNG queries + 20 JPG reference library): RGB, ROI, descriptors (L\*, a\*, b\*, S, YI, ΔE). The aging-day (LODO) reproduction reads its image data from this file; the A₁g regression additionally reads `dataset/raman_a1g_values.csv`. |
 | `dbfiles/manifest.csv` | Plain index of the 53 images (condition, day, ROI, descriptors). |
 | `dbfiles/CHECKSUMS.md5` | MD5 checksums of the data files. |
 | `dataset/images/` | 33 analysis photographs (PNG) — aging-day queries. |

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Writes the fold-wise prediction table of the canonical manual-ROI LODO to
-# outputs/canon_foldwise.csv (the raw data behind SI Table S3, promised in the Response Letter).
+# outputs/canon_foldwise.csv (the raw data behind SI Table S8, promised in the Response Letter).
 """
 From the public deposit DB (hfs2_oxidation_dataset.db) alone, computes the fold-wise
 predictions and errors of the canonical LODO (reference = 20 JPG, query = 33 PNG,

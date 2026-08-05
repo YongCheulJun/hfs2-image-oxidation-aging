@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Self-contained script that reproduces and verifies the canonical MSSP-D-26-02329
-# values (manual-ROI LODO + A1g regression) from the public deposit DB alone.
+# values (manual-ROI LODO + A1g regression) from this public deposit: the image
+# database plus the deposited Ref. [13] A1g CSV (dataset/raman_a1g_values.csv).
 """
 Canonical-results reproduction script for MSSP-D-26-02329 (HfS2 optical degradation).
 ================================================================================
@@ -11,9 +12,9 @@ WHAT THIS REPRODUCES (paper values, manual-ROI canonical pipeline):
   2. LODO evaluation .... reference = 20 JPG, query = 33 PNG, leave-out = every JPG
                           sharing the query's exact (condition, day); headline metric =
                           pooled RMSE over the 3 oxidizing conditions (n = 21).
-                          b*+clip 6.78 / kNN 7.70 / ensemble 7.94 / spatial 9.95 /
+                          b*+clip 6.78 / kNN 7.70 / ensemble 7.94 / spatial 9.52 /
                           Wasserstein 8.77 / FFT 12.78 / pool-mean 9.84 (days).
-  3. Ensemble weights ... Huber fit on ox-21: kNN 0.91 / spatial 0.02 / Wass 0.07 / FFT 0.
+  3. Ensemble weights ... Huber fit on ox-21: kNN 0.91 / spatial 0.04 / Wass 0.05 / FFT 0.
   4. Significance ....... b*+clip vs pool-mean: dRMSE +3.06, bootstrap 95% CI
                           [+1.55, +4.42], Wilcoxon two-sided p = 0.0030, 18/21 wins.
                           kNN vs pool-mean: CI [+0.15, +4.78] (excludes 0).
@@ -237,11 +238,12 @@ def spatial_feat(rgb, m, roi, rows=3, cols=3):
             vals = b[ry0:ry1, rx0:rx1][m[ry0:ry1, rx0:rx1]]
             if len(vals) >= 5:
                 seg[r, c] = float(np.mean(vals))
-    ent = float(np.nanstd(seg))
-    # original definition: 3x3 center block covers all -> boundary empty -> grad = 0
+    icsd = float(np.nanstd(seg))  # inter-cell standard deviation (std of the 9 cell b* means)
+    # centre-to-boundary b* gradient: centre = the single central cell, boundary = the
+    # surrounding 8 cells (mean over the cells with enough pixels).
     cr, cc = rows // 2, cols // 2
     cm = np.zeros((rows, cols), bool)
-    cm[max(0, cr - 1):cr + 2, max(0, cc - 1):cc + 2] = True
+    cm[cr, cc] = True
     bd = ~cm
     cv_ = seg[cm & ~np.isnan(seg)]; bv = seg[bd & ~np.isnan(seg)]
     grad = float(np.mean(bv) - np.mean(cv_)) if (len(cv_) and len(bv)) else 0.0
@@ -250,7 +252,7 @@ def spatial_feat(rgb, m, roi, rows=3, cols=3):
     rvar = float(np.mean(rv)) if rv else 0.0
     cvar = float(np.mean(cvv)) if cvv else 0.0
     ani = rvar / (cvar + 1e-6) if cvar > 1e-6 else 1.0
-    return ent, grad, ani
+    return icsd, grad, ani
 
 
 # ------------------------------------------------------------------- estimators
@@ -302,6 +304,7 @@ def est_fft(q, pool):
 
 
 def est_spatial(q, pool):
+    # sp = (inter-cell std, centre-boundary gradient, anisotropy); weighted normalized distance 0.4/0.4/0.2
     env = [p["sp"][0] for p in pool]; bgv = [p["sp"][1] for p in pool]
     ent_r = max(max(env) - min(env), 1e-6)
     bg_r = max(max(abs(v) for v in bgv) * 2, 1e-6)
@@ -556,14 +559,14 @@ def main():
     for key, label, want in [("bs_clip", "b* regression + clip[0,29]", 6.78),
                              ("knn", "kNN color distance", 7.70),
                              ("ens", "4-method Huber ensemble", 7.94),
-                             ("spatial", "spatial", 9.95),
+                             ("spatial", "spatial", 9.52),
                              ("wass", "Wasserstein", 8.77),
                              ("fft", "FFT", 12.78),
                              ("pm", "pool-mean (LODO baseline)", 9.84)]:
         check(f"RMSE {label}", rmse(errs(ox_q, key)), want)
 
     print("\n## 6. Ensemble weights (Huber fit, ox-21)")
-    for m, want in zip(M4, [0.91, 0.07, 0.00, 0.02]):
+    for m, want in zip(M4, [0.91, 0.05, 0.00, 0.04]):
         check(f"ensemble weight {m}", float(w_all[M4.index(m)]), want)
 
     # ---- 7. significance ----------------------------------------------------
@@ -625,7 +628,7 @@ def main():
                 print(f"  FAILED: {name}")
         print("RESULT: FAIL — canonical values NOT fully reproduced")
         sys.exit(1)
-    print("RESULT: ALL PASS — canonical paper values reproduced from the public DB alone")
+    print("RESULT: ALL PASS — canonical paper values reproduced from this public deposit (DB + Ref. [13] A1g CSV)")
 
 
 if __name__ == "__main__":

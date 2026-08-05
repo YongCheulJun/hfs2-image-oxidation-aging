@@ -78,11 +78,11 @@ def spatial_feat(rgb, m, roi, rows=3, cols=3):
             rx0 = x0 + int(c * sw); rx1 = x0 + int((c + 1) * sw) if c < cols - 1 else x1
             vals = b[ry0:ry1, rx0:rx1][m[ry0:ry1, rx0:rx1]]
             if len(vals) >= 5: seg[r, c] = float(np.mean(vals))
-    ent = float(np.nanstd(seg))
-    # Original definition: in the 3x3 grid the centre block spans everything, so the
-    # boundary is empty -> grad = 0 (reproduced exactly as defined).
+    icsd = float(np.nanstd(seg))  # inter-cell standard deviation (std of the 9 cell b* means)
+    # centre-to-boundary b* gradient: centre = the single central cell, boundary = the
+    # surrounding 8 cells (mean over the cells with enough pixels).
     cr, cc = rows // 2, cols // 2
-    cm = np.zeros((rows, cols), bool); cm[max(0, cr - 1):cr + 2, max(0, cc - 1):cc + 2] = True
+    cm = np.zeros((rows, cols), bool); cm[cr, cc] = True
     bd = ~cm
     cv_ = seg[cm & ~np.isnan(seg)]; bv = seg[bd & ~np.isnan(seg)]
     grad = float(np.mean(bv) - np.mean(cv_)) if (len(cv_) and len(bv)) else 0.0
@@ -91,7 +91,7 @@ def spatial_feat(rgb, m, roi, rows=3, cols=3):
     rvar = float(np.mean(rv)) if rv else 0.0
     cvar = float(np.mean(cvv)) if cvv else 0.0
     ani = rvar / (cvar + 1e-6) if cvar > 1e-6 else 1.0
-    return ent, grad, ani
+    return icsd, grad, ani
 
 def top3_est(scores):  # [(dist, day)] -> inv-dist weighted mean of top3
     scores.sort(key=lambda x: x[0])
@@ -134,6 +134,7 @@ def est_fft(q, pool):
     return top3_est(sc)
 
 def est_spatial(q, pool):
+    # sp = (inter-cell std, centre-boundary gradient, anisotropy); weighted normalized distance 0.4/0.4/0.2
     env = [p["sp"][0] for p in pool]; bgv = [p["sp"][1] for p in pool]
     ent_r = max(max(env) - min(env), 1e-6)
     bg_r = max(max(abs(v) for v in bgv) * 2, 1e-6)
